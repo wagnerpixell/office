@@ -3,6 +3,7 @@ import Image = Phaser.GameObjects.Image;
 import Sprite = Phaser.GameObjects.Sprite;
 import Text = Phaser.GameObjects.Text;
 import ScenePlugin = Phaser.Scenes.ScenePlugin;
+import { WAError } from "./WAError";
 import Axios from "axios";
 
 export const ErrorSceneName = "ErrorScene";
@@ -86,6 +87,12 @@ export class ErrorScene extends Phaser.Scene {
             scene.start(ErrorSceneName, {
                 title: "An error occurred",
                 subTitle: error,
+            });
+        } else if (error instanceof WAError) {
+            scene.start(ErrorSceneName, {
+                title: error.title,
+                subTitle: error.subTitle,
+                message: error.details,
             });
         } else if (Axios.isAxiosError(error) && error.response) {
             // Axios HTTP error

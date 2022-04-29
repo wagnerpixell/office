@@ -1,4 +1,4 @@
-@media screen and (orientation:landscape) {
+@include media-breakpoint-down(lg) {
   #cowebsite {
     right: 0;
     top: 0;

@@ -34,6 +34,7 @@ export class PlayerMovement {
         const y =
             (this.endPosition.y - this.startPosition.y) * ((tick - this.startTick) / (this.endTick - this.startTick)) +
             this.startPosition.y;
+        //console.log('Computed position ', x, y)
         return {
             x,
             y,

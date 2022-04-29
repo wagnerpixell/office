@@ -9,6 +9,7 @@ import { Companion } from "../Companion/Companion";
 import type { GameScene } from "../Game/GameScene";
 import { DEPTH_INGAME_TEXT_INDEX } from "../Game/DepthIndexes";
 import type OutlinePipelinePlugin from "phaser3-rex-plugins/plugins/outlinepipeline-plugin.js";
+import { isSilentStore } from "../../Stores/MediaStore";
 import { lazyLoadPlayerCharacterTextures } from "./PlayerTexturesLoadingManager";
 import { TexturesHelper } from "../Helpers/TexturesHelper";
 import type { PictureStore } from "../../Stores/PictureStore";
@@ -19,7 +20,6 @@ import type CancelablePromise from "cancelable-promise";
 import { TalkIcon } from "../Components/TalkIcon";
 import { Deferred } from "ts-deferred";
 import { PlayerStatusDot } from "../Components/PlayerStatusDot";
-import { AvailabilityStatus } from "../../Messages/ts-proto-generated/protos/messages";
 
 const playerNameY = -25;
 const interactiveRadius = 35;
@@ -236,8 +236,8 @@ export abstract class Character extends Container implements OutlineableInterfac
         this.talkIcon.show(show, forceClose);
     }
 
-    public setStatus(status: AvailabilityStatus, instant: boolean = false): void {
-        this.statusDot.setStatus(status, instant);
+    public setAwayStatus(away: boolean = true, instant: boolean = false): void {
+        this.statusDot.setAway(away, instant);
     }
 
     public addCompanion(name: string, texturePromise?: CancelablePromise<string>): void {
@@ -353,6 +353,13 @@ export abstract class Character extends Container implements OutlineableInterfac
         this.list.forEach((objectContaining) => objectContaining.destroy());
         this.outlineColorStoreUnsubscribe();
         super.destroy();
+    }
+
+    isSilent() {
+        isSilentStore.set(true);
+    }
+    noSilent() {
+        isSilentStore.set(false);
     }
 
     playEmote(emote: string) {

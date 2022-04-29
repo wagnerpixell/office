@@ -16,6 +16,8 @@ import trigger from "./trigger";
 
 const zh_CN: Translation = {
     ...(en_US as Translation),
+    language: "中文",
+    country: "中国",
     audio,
     camera,
     chat,

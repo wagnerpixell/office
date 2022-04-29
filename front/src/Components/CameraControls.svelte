@@ -1,6 +1,6 @@
 <script lang="ts">
     import { requestedScreenSharingState, screenSharingAvailableStore } from "../Stores/ScreenSharingStore";
-    import { requestedCameraState, requestedMicrophoneState, silentStore } from "../Stores/MediaStore";
+    import { isSilentStore, requestedCameraState, requestedMicrophoneState } from "../Stores/MediaStore";
     import monitorImg from "./images/monitor.svg";
     import monitorCloseImg from "./images/monitor-close.svg";
     import cinemaImg from "./images/cinema.svg";
@@ -13,6 +13,7 @@
     import lockImg from "./images/lock.svg";
     import { LayoutMode } from "../WebRtc/LayoutManager";
     import { peerStore } from "../Stores/PeerStore";
+    import { onDestroy } from "svelte";
     import { embedScreenLayout } from "../Stores/EmbedScreensStore";
     import { followRoleStore, followStateStore, followUsersStore } from "../Stores/FollowStore";
     import { gameManager } from "../Phaser/Game/GameManager";
@@ -21,7 +22,7 @@
     const gameScene = gameManager.getCurrentGameScene();
 
     function screenSharingClick(): void {
-        if ($silentStore) return;
+        if (isSilent) return;
         if ($requestedScreenSharingState === true) {
             requestedScreenSharingState.disableScreenSharing();
         } else {
@@ -30,7 +31,7 @@
     }
 
     function cameraClick(): void {
-        if ($silentStore) return;
+        if (isSilent) return;
         if ($requestedCameraState === true) {
             requestedCameraState.disableWebcam();
         } else {
@@ -39,7 +40,7 @@
     }
 
     function microphoneClick(): void {
-        if ($silentStore) return;
+        if (isSilent) return;
         if ($requestedMicrophoneState === true) {
             requestedMicrophoneState.disableMicrophone();
         } else {
@@ -74,6 +75,12 @@
     function lockClick() {
         gameScene.connection?.emitLockGroup(!$currentPlayerGroupLockStateStore);
     }
+
+    let isSilent: boolean;
+    const unsubscribeIsSilent = isSilentStore.subscribe((value) => {
+        isSilent = value;
+    });
+    onDestroy(unsubscribeIsSilent);
 </script>
 
 <div class="btn-cam-action">
@@ -87,7 +94,7 @@
 
     <div
         class="btn-follow"
-        class:hide={($peerStore.size === 0 && $followStateStore === "off") || $silentStore}
+        class:hide={($peerStore.size === 0 && $followStateStore === "off") || isSilent}
         class:disabled={$followStateStore !== "off"}
         on:click={followClick}
     >
@@ -96,7 +103,7 @@
 
     <div
         class="btn-lock"
-        class:hide={$peerStore.size === 0 || $silentStore}
+        class:hide={$peerStore.size === 0 || isSilent}
         class:disabled={$currentPlayerGroupLockStateStore}
         on:click={lockClick}
     >
@@ -106,26 +113,26 @@
     <div
         class="btn-monitor"
         on:click={screenSharingClick}
-        class:hide={!$screenSharingAvailableStore || $silentStore}
+        class:hide={!$screenSharingAvailableStore || isSilent}
         class:enabled={$requestedScreenSharingState}
     >
-        {#if $requestedScreenSharingState && !$silentStore}
+        {#if $requestedScreenSharingState && !isSilent}
             <img class="noselect" src={monitorImg} alt="Start screen sharing" />
         {:else}
             <img class="noselect" src={monitorCloseImg} alt="Stop screen sharing" />
         {/if}
     </div>
 
-    <div class="btn-video" on:click={cameraClick} class:disabled={!$requestedCameraState || $silentStore}>
-        {#if $requestedCameraState && !$silentStore}
+    <div class="btn-video" on:click={cameraClick} class:disabled={!$requestedCameraState || isSilent}>
+        {#if $requestedCameraState && !isSilent}
             <img class="noselect" src={cinemaImg} alt="Turn on webcam" />
         {:else}
             <img class="noselect" src={cinemaCloseImg} alt="Turn off webcam" />
         {/if}
     </div>
 
-    <div class="btn-micro" on:click={microphoneClick} class:disabled={!$requestedMicrophoneState || $silentStore}>
-        {#if $requestedMicrophoneState && !$silentStore}
+    <div class="btn-micro" on:click={microphoneClick} class:disabled={!$requestedMicrophoneState || isSilent}>
+        {#if $requestedMicrophoneState && !isSilent}
             <img class="noselect" src={microphoneImg} alt="Turn on microphone" />
         {:else}
             <img class="noselect" src={microphoneCloseImg} alt="Turn off microphone" />

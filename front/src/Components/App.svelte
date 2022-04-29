@@ -2,7 +2,6 @@
     import type { Game } from "../Phaser/Game/Game";
     import { chatVisibilityStore } from "../Stores/ChatStore";
     import { errorStore } from "../Stores/ErrorStore";
-    import { errorScreenStore } from "../Stores/ErrorScreenStore";
     import { loginSceneVisibleStore } from "../Stores/LoginSceneStore";
     import { enableCameraSceneVisibilityStore } from "../Stores/MediaStore";
     import { selectCharacterSceneVisibleStore } from "../Stores/SelectCharacterStore";
@@ -14,16 +13,11 @@
     import SelectCharacterScene from "./selectCharacter/SelectCharacterScene.svelte";
     import SelectCompanionScene from "./SelectCompanion/SelectCompanionScene.svelte";
     import ErrorDialog from "./UI/ErrorDialog.svelte";
-    import ErrorScreen from "./UI/ErrorScreen.svelte";
 
     export let game: Game;
 </script>
 
-{#if $errorScreenStore !== undefined}
-    <div>
-        <ErrorScreen />
-    </div>
-{:else if $errorStore.length > 0}
+{#if $errorStore.length > 0}
     <div>
         <ErrorDialog />
     </div>

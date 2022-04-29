@@ -1,6 +1,7 @@
 import { ExSocketInterface } from "../Model/Websocket/ExSocketInterface";
 import { PositionDispatcher } from "./PositionDispatcher";
 import { ViewportInterface } from "../Model/Websocket/ViewportMessage";
+import { arrayIntersect } from "../Services/ArrayHelper";
 import { ZoneEventListener } from "../Model/Zone";
 import { apiClientRepository } from "../Services/ApiClientRepository";
 import {
@@ -23,6 +24,8 @@ export enum GameRoomPolicyTypes {
 
 export class PusherRoom {
     private readonly positionNotifier: PositionDispatcher;
+    public tags: string[];
+    public policyType: GameRoomPolicyTypes;
     private versionNumber: number = 1;
     private backConnection!: ClientReadableStream<BatchToPusherRoomMessage>;
     private isClosing: boolean = false;
@@ -30,6 +33,9 @@ export class PusherRoom {
     //public readonly variables = new Map<string, string>();
 
     constructor(public readonly roomUrl: string, private socketListener: ZoneEventListener) {
+        this.tags = [];
+        this.policyType = GameRoomPolicyTypes.ANONYMOUS_POLICY;
+
         // A zone is 10 sprites wide.
         this.positionNotifier = new PositionDispatcher(this.roomUrl, 320, 320, this.socketListener);
     }
@@ -45,6 +51,10 @@ export class PusherRoom {
     public leave(socket: ExSocketInterface) {
         this.positionNotifier.removeViewport(socket);
         this.listeners.delete(socket);
+    }
+
+    public canAccess(userTags: string[]): boolean {
+        return arrayIntersect(userTags, this.tags);
     }
 
     public isEmpty(): boolean {

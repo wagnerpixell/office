@@ -36,14 +36,14 @@ export function createTray() {
         },
         {
             label: "Check for updates",
-            click() {
-                void autoUpdater.manualRequestUpdateCheck();
+            async click() {
+                await autoUpdater.manualRequestUpdateCheck();
             },
         },
         {
             label: "Open Logs",
             click() {
-                void log.openLog();
+                log.openLog();
             },
         },
         {

@@ -6,7 +6,6 @@ export interface IconButtonConfig {
     hover: IconButtonAppearanceConfig;
     pressed: IconButtonAppearanceConfig;
     selected: IconButtonAppearanceConfig;
-    iconScale?: number;
 }
 
 export interface IconButtonAppearanceConfig {
@@ -35,7 +34,7 @@ export class IconButton extends Phaser.GameObjects.Container {
         this.config = config;
 
         this.background = this.scene.add.graphics();
-        this.icon = this.scene.add.image(0, 0, this.config.iconTextureKey).setScale(config.iconScale ?? 1);
+        this.icon = this.scene.add.image(0, 0, this.config.iconTextureKey);
         this.drawBackground(this.config.idle);
 
         this.add([this.background, this.icon]);

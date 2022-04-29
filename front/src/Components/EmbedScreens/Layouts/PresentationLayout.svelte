@@ -67,11 +67,10 @@
                         {/key}
                     {:else if $highlightedEmbedScreen.type === "cowebsite"}
                         {#key $highlightedEmbedScreen.embed.getId()}
-                            <div class="highlighted-cowebsite-container nes-container is-rounded">
-                                <div
-                                    id={"cowebsite-slot-" + $highlightedEmbedScreen.embed.getId()}
-                                    class="highlighted-cowebsite"
-                                />
+                            <div
+                                id={"cowebsite-slot-" + $highlightedEmbedScreen.embed.getId()}
+                                class="highlighted-cowebsite nes-container is-rounded"
+                            >
                                 <div class="actions">
                                     <button type="button" class="nes-btn is-error close" on:click={closeCoWebsite}
                                         >&times;</button
@@ -121,29 +120,20 @@
 
         .highlighted-cowebsite {
             height: 100% !important;
-            width: 100% !important;
-            position: relative;
-            z-index: 200;
+            width: 96%;
+            background-color: rgba(#000000, 0.6);
+            margin: 0 !important;
 
-            &-container {
-                height: 100% !important;
-                width: 96%;
-                background-color: rgba(#000000, 0.6);
-                margin: 0 !important;
-                padding: 0 !important;
-                .actions {
-                    z-index: 202;
-                    position: absolute;
-                    width: 100%;
-                    top: 0;
-                    display: flex;
-                    flex-direction: row;
-                    justify-content: end;
-                    gap: 2%;
+            .actions {
+                z-index: 200;
+                position: relative;
+                display: flex;
+                flex-direction: row;
+                justify-content: end;
+                gap: 2%;
 
-                    button {
-                        pointer-events: all;
-                    }
+                button {
+                    pointer-events: all;
                 }
             }
         }

@@ -2,7 +2,6 @@ import { derived, Readable, readable, writable } from "svelte/store";
 import { peerStore } from "./PeerStore";
 import type { LocalStreamStoreValue } from "./MediaStore";
 import { myCameraVisibilityStore } from "./MyCameraStoreVisibility";
-import type { DesktopCapturerSource } from "@wa-preload-app";
 
 declare const navigator: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -92,25 +91,6 @@ export const screenSharingConstraintsStore = derived(
     } as MediaStreamConstraints
 );
 
-async function getDesktopCapturerSources() {
-    showDesktopCapturerSourcePicker.set(true);
-    const source = await new Promise<DesktopCapturerSource | null>((resolve) => {
-        desktopCapturerSourcePromiseResolve = resolve;
-    });
-    if (source === null) {
-        return;
-    }
-    return navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-            mandatory: {
-                chromeMediaSource: "desktop",
-                chromeMediaSourceId: source.id,
-            },
-        },
-    });
-}
-
 /**
  * A store containing the MediaStream object for ScreenSharing (or null if nothing requested, or Error if an error occurred)
  */
@@ -130,9 +110,7 @@ export const screenSharingLocalStreamStore = derived<Readable<MediaStreamConstra
         }
 
         let currentStreamPromise: Promise<MediaStream>;
-        if (window.WAD?.getDesktopCapturerSources) {
-            currentStreamPromise = getDesktopCapturerSources();
-        } else if (navigator.getDisplayMedia) {
+        if (navigator.getDisplayMedia) {
             currentStreamPromise = navigator.getDisplayMedia({ constraints });
         } else if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
             currentStreamPromise = navigator.mediaDevices.getDisplayMedia({ constraints });
@@ -222,7 +200,3 @@ export const screenSharingLocalMedia = readable<ScreenSharingLocalMedia | null>(
         unsubscribe();
     };
 });
-
-export const showDesktopCapturerSourcePicker = writable(false);
-
-export let desktopCapturerSourcePromiseResolve: ((source: DesktopCapturerSource | null) => void) | undefined;

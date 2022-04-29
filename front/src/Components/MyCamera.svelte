@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { localVolumeStore, obtainedMediaConstraintStore, silentStore } from "../Stores/MediaStore";
-    import { localStreamStore } from "../Stores/MediaStore";
+    import { localVolumeStore, obtainedMediaConstraintStore } from "../Stores/MediaStore";
+    import { localStreamStore, isSilentStore } from "../Stores/MediaStore";
     import SoundMeterWidget from "./SoundMeterWidget.svelte";
     import { onDestroy, onMount } from "svelte";
     import { srcObject } from "./Video/utils";
@@ -20,6 +20,11 @@
         unsubscribeLocalStreamStore();
     });
 
+    let isSilent: boolean;
+    const unsubscribeIsSilent = isSilentStore.subscribe((value) => {
+        isSilent = value;
+    });
+
     let cameraContainer: HTMLDivElement;
 
     onMount(() => {
@@ -35,14 +40,16 @@
             }
         });
     });
+
+    onDestroy(unsubscribeIsSilent);
 </script>
 
 <div
     class="nes-container is-rounded my-cam-video-container"
-    class:hide={($localStreamStore.type !== "success" || !$obtainedMediaConstraintStore.video) && !$silentStore}
+    class:hide={($localStreamStore.type !== "success" || !$obtainedMediaConstraintStore.video) && !isSilent}
     bind:this={cameraContainer}
 >
-    {#if $silentStore}
+    {#if isSilent}
         <div class="is-silent">{$LL.camera.my.silentZone()}</div>
     {:else if $localStreamStore.type === "success" && $localStreamStore.stream}
         <video class="my-cam-video" use:srcObject={stream} autoplay muted playsinline />

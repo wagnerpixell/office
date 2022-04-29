@@ -16,6 +16,7 @@ export class GameSceneUserInputHandler implements UserInputHandlerInterface {
         gameObjects: Phaser.GameObjects.GameObject[],
         deltaX: number,
         deltaY: number,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         deltaZ: number
     ): void {
         this.gameScene.zoomByFactor(1 - (deltaY / 53) * 0.1);
@@ -50,6 +51,7 @@ export class GameSceneUserInputHandler implements UserInputHandlerInterface {
             });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public handlePointerDownEvent(pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]): void {}
 
     public handleSpaceKeyUpEvent(event: Event): Event {

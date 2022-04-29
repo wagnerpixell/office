@@ -1,7 +1,6 @@
 import type { SignalData } from "simple-peer";
 import type { RoomConnection } from "./RoomConnection";
 import type { BodyResourceDescriptionInterface } from "../Phaser/Entity/PlayerTextures";
-import { AvailabilityStatus } from "../Messages/ts-proto-generated/protos/messages";
 
 export interface PointInterface {
     x: number;
@@ -15,7 +14,7 @@ export interface MessageUserPositionInterface {
     name: string;
     characterLayers: BodyResourceDescriptionInterface[];
     position: PointInterface;
-    status: AvailabilityStatus;
+    away: boolean;
     visitCardUrl: string | null;
     companion: string | null;
     userUuid: string;
@@ -31,7 +30,7 @@ export interface MessageUserJoined {
     name: string;
     characterLayers: BodyResourceDescriptionInterface[];
     position: PointInterface;
-    status: AvailabilityStatus;
+    away: boolean;
     visitCardUrl: string | null;
     companion: string | null;
     userUuid: string;

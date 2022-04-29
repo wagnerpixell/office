@@ -1,0 +1,72 @@
+version: '3'
+
+services:
+    reverse-proxy:
+      image: traefik:v2.3
+      command:
+        - --log.level=WARN
+        #- --api.insecure=true
+        - --api.dashboard=true
+        - --providers.docker.network=web
+        - --providers.docker
+        - --entryPoints.web.address=:80
+        - --entrypoints.web.http.redirections.entryPoint.to=websecure
+        - --entrypoints.web.http.redirections.entryPoint.scheme=https
+        - --entryPoints.websecure.address=:443
+        - --entryPoints.video.address=:10000/udp
+        - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
+        - --certificatesresolvers.le.acme.storage=/opt/workadventure/ssl/acme/acme.json
+        # used during the challenge
+        - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      ports:
+        - "80:80"
+        - "443:443"
+        # The Web UI (enabled by --api.insecure=true)
+        - "8080:8080"
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - "${CERT_LOCATION}:/opt/workadventure/ssl/acme/"
+      restart: unless-stopped
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.traefik.loadbalancer.server.port=888"
+        - "traefik.http.routers.traefik.rule=Host(`admin.${DOMAIN}`)"
+        - "traefik.http.routers.traefik.entrypoints=websecure"
+        - "traefik.http.routers.traefik.tls.certresolver=le"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.routers.traefik.middlewares=traefik-auth"
+        # You should modify the line below to set a password for your Traefik-dashboard
+        #- "traefik.http.middlewares.traefik-auth.basicauth.users=admin:"
+      networks:
+        web:
+
+
+# Still working on a useful COTURN setup. Included for later use.
+#    coturn:
+#      image: coturn/coturn:4.5.2
+#      command:
+#        - turnserver
+#        - --log-file=stdout
+#        - --external-ip=$$(detect-external-ip)
+#        - --listening-port=3478
+#        - --min-port=10000
+#        - --max-port=10010
+#        - --tls-listening-port=5349
+#        - --listening-ip=0.0.0.0
+#        - --realm=coturn.${DOMAIN}
+#        - --server-name=coturn.${DOMAIN}
+#        - --lt-cred-mech
+#        # Enable Coturn "REST API" to validate temporary passwords.
+#        # - --use-auth-secret
+#        # - --static-auth-secret=SomeStaticAuthSecret
+#        # - --userdb=/var/lib/turn/turndb
+#        - --user=workadventure:WorkAdventure123
+#        # use real-valid certificate/privatekey files
+#        # - --cert=/root/letsencrypt/fullchain.pem
+#        # - --pkey=/root/letsencrypt/privkey.pem
+#      network_mode: host
+ 
+networks:
+  web:
+    external: true
+

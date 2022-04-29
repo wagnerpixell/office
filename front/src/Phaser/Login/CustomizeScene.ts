@@ -54,7 +54,7 @@ export class CustomizeScene extends AbstractCharacterScene {
     }
 
     public preload(): void {
-        super.preload();
+        this.input.dragDistanceThreshold = 10;
 
         this.load.image("iconClothes", "/resources/icons/icon_clothes.png");
         this.load.image("iconAccessory", "/resources/icons/icon_accessory.png");
@@ -94,7 +94,6 @@ export class CustomizeScene extends AbstractCharacterScene {
     }
 
     public create(): void {
-        this.tryLoadLastUsedWokaLayers();
         waScaleManager.zoomModifier = 1;
         this.createSlotBackgroundTextures();
         this.initializeCustomWokaPreviewer();
@@ -113,6 +112,7 @@ export class CustomizeScene extends AbstractCharacterScene {
         this.onResize();
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public update(time: number, dt: number): void {
         this.customWokaPreviewer.update();
     }
@@ -150,35 +150,12 @@ export class CustomizeScene extends AbstractCharacterScene {
         this.scene.run(SelectCharacterSceneName);
     }
 
-    private tryLoadLastUsedWokaLayers(): void {
-        try {
-            const savedWokaLayers = gameManager.getCharacterLayers();
-            if (savedWokaLayers && savedWokaLayers.length !== 0) {
-                this.selectedLayers = [];
-                for (let i = 0; i < savedWokaLayers.length; i += 1) {
-                    this.selectedLayers.push(
-                        this.layers[i].findIndex((item) => item.id === gameManager.getCharacterLayers()[i])
-                    );
-                }
-            }
-        } catch {
-            console.warn("Cannot load previous WOKA");
-        }
-    }
-
     private createSlotBackgroundTextures(): void {
         for (let i = 0; i < 4; i += 1) {
             if (this.textures.getTextureKeys().includes(`floorTexture${i}`)) {
                 continue;
             }
-            TexturesHelper.createFloorRectangleTexture(
-                this,
-                `floorTexture${i}`,
-                WokaBodyPartSlot.SIZE,
-                WokaBodyPartSlot.SIZE,
-                "floorTiles",
-                i
-            );
+            TexturesHelper.createFloorRectangleTexture(this, `floorTexture${i}`, 50, 50, "floorTiles", i);
         }
     }
 
@@ -237,16 +214,15 @@ export class CustomizeScene extends AbstractCharacterScene {
             ),
             [CustomWokaBodyPart.Body]: new IconButton(this, 0, 0, this.getDefaultIconButtonConfig("iconBody")),
             [CustomWokaBodyPart.Clothes]: new IconButton(this, 0, 0, this.getDefaultIconButtonConfig("iconClothes")),
-            [CustomWokaBodyPart.Eyes]: new IconButton(this, 0, 0, this.getDefaultIconButtonConfig("iconEyes", 0.7)),
+            [CustomWokaBodyPart.Eyes]: new IconButton(this, 0, 0, this.getDefaultIconButtonConfig("iconEyes")),
             [CustomWokaBodyPart.Hair]: new IconButton(this, 0, 0, this.getDefaultIconButtonConfig("iconHair")),
             [CustomWokaBodyPart.Hat]: new IconButton(this, 0, 0, this.getDefaultIconButtonConfig("iconHat")),
         };
     }
 
-    private getDefaultIconButtonConfig(iconTextureKey: string, iconScale?: number): IconButtonConfig {
+    private getDefaultIconButtonConfig(iconTextureKey: string): IconButtonConfig {
         return {
             iconTextureKey,
-            iconScale,
             width: 25,
             height: 25,
             idle: {
@@ -352,14 +328,13 @@ export class CustomizeScene extends AbstractCharacterScene {
     }
 
     private handleCustomWokaPreviewerOnResize(): void {
-        const ratio = innerHeight / innerWidth;
         this.customWokaPreviewer.x = this.cameras.main.worldView.x + this.cameras.main.width / 2;
-        this.customWokaPreviewer.y = this.customWokaPreviewer.displayHeight * 0.5 + (ratio > 1.6 ? 40 : 10);
+        this.customWokaPreviewer.y = this.customWokaPreviewer.displayHeight * 0.5 + 10;
     }
 
     private handleBodyPartButtonsOnResize(): void {
         const ratio = innerHeight / innerWidth;
-        const slotDimension = WokaBodyPartSlot.SIZE;
+        const slotDimension = 50;
 
         for (const part in this.bodyPartsButtons) {
             this.bodyPartsButtons[part as CustomWokaBodyPart].setDisplaySize(slotDimension, slotDimension);
@@ -446,7 +421,7 @@ export class CustomizeScene extends AbstractCharacterScene {
 
     private handleRandomizeButtonOnResize(): void {
         const x =
-            this.customWokaPreviewer.x -
+            this.customWokaPreviewer.x +
             (this.customWokaPreviewer.displayWidth - this.randomizeButton.displayWidth) * 0.5;
         const y =
             this.customWokaPreviewer.y +
@@ -457,7 +432,7 @@ export class CustomizeScene extends AbstractCharacterScene {
 
     private handleFinishButtonOnResize(): void {
         const x =
-            this.customWokaPreviewer.x +
+            this.customWokaPreviewer.x -
             (this.customWokaPreviewer.displayWidth - this.randomizeButton.displayWidth) * 0.5;
         const y =
             this.customWokaPreviewer.y +

@@ -11,9 +11,9 @@ class ScriptUtils {
         window.location.href = url;
     }
 
-    public sendAnonymousChat(chatEvent: ChatEvent, origin?: Window) {
+    public sendAnonymousChat(chatEvent: ChatEvent) {
         const userId = playersStore.addFacticePlayer(chatEvent.author);
-        chatMessagesStore.addExternalMessage(userId, chatEvent.message, origin);
+        chatMessagesStore.addExternalMessage(userId, chatEvent.message);
     }
 }
 

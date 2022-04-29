@@ -14,6 +14,8 @@ import emoji from "./emoji";
 import trigger from "./trigger";
 
 const en_US: BaseTranslation = {
+    language: "English",
+    country: "United States",
     audio,
     camera,
     chat,

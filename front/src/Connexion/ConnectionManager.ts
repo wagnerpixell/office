@@ -363,13 +363,15 @@ class ConnectionManager {
 
         if (locale) {
             try {
-                if (locales.indexOf(locale) !== -1) {
-                    await setCurrentLocale(locale as Locales);
+                if (locales.indexOf(locale) == -1) {
+                    locales.forEach((l) => {
+                        if (l.startsWith(locale.split("-")[0])) {
+                            setCurrentLocale(l);
+                            return;
+                        }
+                    });
                 } else {
-                    const nonRegionSpecificLocale = locales.find((l) => l.startsWith(locale.split("-")[0]));
-                    if (nonRegionSpecificLocale) {
-                        await setCurrentLocale(nonRegionSpecificLocale);
-                    }
+                    setCurrentLocale(locale as Locales);
                 }
             } catch (err) {
                 console.warn("Could not set locale", err);

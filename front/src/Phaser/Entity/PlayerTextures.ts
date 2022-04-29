@@ -36,16 +36,14 @@ export enum PlayerTexturesKey {
 }
 
 export class PlayerTextures {
-    private wokaResources: BodyResourceDescriptionListInterface = {};
-    private colorResources: BodyResourceDescriptionListInterface = {};
-    private eyesResources: BodyResourceDescriptionListInterface = {};
-    private hairResources: BodyResourceDescriptionListInterface = {};
-    private clothesResources: BodyResourceDescriptionListInterface = {};
-    private hatsResources: BodyResourceDescriptionListInterface = {};
-    private accessoriesResources: BodyResourceDescriptionListInterface = {};
-    private layers: BodyResourceDescriptionListInterface[] = [];
-
-    private wokaCollections = new Map<string, BodyResourceDescriptionInterface[]>();
+    private PLAYER_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private COLOR_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private EYES_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private HAIR_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private CLOTHES_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private HATS_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private ACCESSORIES_RESOURCES: BodyResourceDescriptionListInterface = {};
+    private LAYERS: BodyResourceDescriptionListInterface[] = [];
 
     public loadPlayerTexturesMetadata(metadata: WokaList): void {
         this.mapTexturesMetadataIntoResources(metadata);
@@ -54,53 +52,43 @@ export class PlayerTextures {
     public getTexturesResources(key: PlayerTexturesKey): BodyResourceDescriptionListInterface {
         switch (key) {
             case PlayerTexturesKey.Accessory:
-                return this.accessoriesResources;
+                return this.ACCESSORIES_RESOURCES;
             case PlayerTexturesKey.Body:
-                return this.colorResources;
+                return this.COLOR_RESOURCES;
             case PlayerTexturesKey.Clothes:
-                return this.clothesResources;
+                return this.CLOTHES_RESOURCES;
             case PlayerTexturesKey.Eyes:
-                return this.eyesResources;
+                return this.EYES_RESOURCES;
             case PlayerTexturesKey.Hair:
-                return this.hairResources;
+                return this.HAIR_RESOURCES;
             case PlayerTexturesKey.Hat:
-                return this.hatsResources;
+                return this.HATS_RESOURCES;
             case PlayerTexturesKey.Woka:
-                return this.wokaResources;
+                return this.PLAYER_RESOURCES;
         }
     }
 
     public getLayers(): BodyResourceDescriptionListInterface[] {
-        return this.layers;
-    }
-
-    public getCollectionsKeys(): string[] {
-        return Array.from(this.wokaCollections.keys());
-    }
-
-    public getWokaCollectionTextures(key: string): BodyResourceDescriptionInterface[] {
-        return this.wokaCollections.get(key) ?? [];
+        return this.LAYERS;
     }
 
     private mapTexturesMetadataIntoResources(metadata: WokaList): void {
-        this.wokaResources = this.getMappedResources(metadata.woka);
-        this.colorResources = this.getMappedResources(metadata.body);
-        this.eyesResources = this.getMappedResources(metadata.eyes);
-        this.hairResources = this.getMappedResources(metadata.hair);
-        this.clothesResources = this.getMappedResources(metadata.clothes);
-        this.hatsResources = this.getMappedResources(metadata.hat);
-        this.accessoriesResources = this.getMappedResources(metadata.accessory);
+        this.PLAYER_RESOURCES = this.getMappedResources(metadata.woka);
+        this.COLOR_RESOURCES = this.getMappedResources(metadata.body);
+        this.EYES_RESOURCES = this.getMappedResources(metadata.eyes);
+        this.HAIR_RESOURCES = this.getMappedResources(metadata.hair);
+        this.CLOTHES_RESOURCES = this.getMappedResources(metadata.clothes);
+        this.HATS_RESOURCES = this.getMappedResources(metadata.hat);
+        this.ACCESSORIES_RESOURCES = this.getMappedResources(metadata.accessory);
 
-        this.layers = [
-            this.colorResources,
-            this.eyesResources,
-            this.hairResources,
-            this.clothesResources,
-            this.hatsResources,
-            this.accessoriesResources,
+        this.LAYERS = [
+            this.COLOR_RESOURCES,
+            this.EYES_RESOURCES,
+            this.HAIR_RESOURCES,
+            this.CLOTHES_RESOURCES,
+            this.HATS_RESOURCES,
+            this.ACCESSORIES_RESOURCES,
         ];
-
-        this.mapWokaCollections(metadata.woka);
     }
 
     private getMappedResources(category: WokaPartType): BodyResourceDescriptionListInterface {
@@ -114,19 +102,6 @@ export class PlayerTextures {
             }
         }
         return resources;
-    }
-
-    private mapWokaCollections(category: WokaPartType): void {
-        if (!category) {
-            return;
-        }
-        for (const collection of category.collections) {
-            const textures: BodyResourceDescriptionInterface[] = [];
-            for (const texture of collection.textures) {
-                textures.push({ id: texture.id, img: texture.url });
-            }
-            this.wokaCollections.set(collection.name, textures);
-        }
     }
 }
 

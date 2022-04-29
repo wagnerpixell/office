@@ -91,7 +91,7 @@ import { MapStore } from "../../Stores/Utils/MapStore";
 import { followUsersColorStore } from "../../Stores/FollowStore";
 import { GameSceneUserInputHandler } from "../UserInput/GameSceneUserInputHandler";
 import { locale } from "../../i18n/i18n-svelte";
-import { availabilityStatusStore, localVolumeStore } from "../../Stores/MediaStore";
+import { localVolumeStore } from "../../Stores/MediaStore";
 import { StringUtils } from "../../Utils/StringUtils";
 import { startLayerNamesStore } from "../../Stores/StartLayerNamesStore";
 import { JitsiCoWebsite } from "../../WebRtc/CoWebsite/JitsiCoWebsite";
@@ -101,6 +101,7 @@ import CancelablePromise from "cancelable-promise";
 import { Deferred } from "ts-deferred";
 import { SuperLoaderPlugin } from "../Services/SuperLoaderPlugin";
 import { PlayerDetailsUpdatedMessage } from "../../Messages/ts-proto-generated/protos/messages";
+import { privacyShutdownStore } from "../../Stores/PrivacyShutdownStore";
 export interface GameSceneInitInterface {
     initPosition: PointInterface | null;
     reconnecting: boolean;
@@ -176,6 +177,8 @@ export class GameScene extends DirtyScene {
 
     private localVolumeStoreUnsubscriber: Unsubscriber | undefined;
     private followUsersColorStoreUnsubscribe!: Unsubscriber;
+    private currentPlayerGroupIdStoreUnsubscribe!: Unsubscriber;
+    private privacyShutdownStoreUnsubscribe!: Unsubscriber;
     private userIsJitsiDominantSpeakerStoreUnsubscriber!: Unsubscriber;
     private jitsiParticipantsCountStoreUnsubscriber!: Unsubscriber;
 
@@ -246,8 +249,6 @@ export class GameScene extends DirtyScene {
         this.listenToIframeEvents();
 
         this.load.image("iconTalk", "/resources/icons/icon_talking.png");
-        this.load.image("iconStatusIndicatorInside", "/resources/icons/icon_status_indicator_inside.png");
-        this.load.image("iconStatusIndicatorOutline", "/resources/icons/icon_status_indicator_outline.png");
 
         if (touchScreenManager.supportTouchScreen) {
             this.load.image(joystickBaseKey, joystickBaseImg);
@@ -678,11 +679,6 @@ export class GameScene extends DirtyScene {
             this.tryChangeShowVoiceIndicatorState(this.jitsiDominantSpeaker && this.jitsiParticipantsCount > 1);
         });
 
-        availabilityStatusStore.subscribe((status) => {
-            this.connection?.emitPlayerStatusChange(status);
-            this.CurrentPlayer.setStatus(status);
-        });
-
         this.emoteUnsubscribe = emoteStore.subscribe((emote) => {
             if (emote) {
                 this.CurrentPlayer?.playEmote(emote.url);
@@ -707,6 +703,10 @@ export class GameScene extends DirtyScene {
                 this.CurrentPlayer.removeFollowOutlineColor();
                 this.connection?.emitPlayerOutlineColor(null);
             }
+        });
+
+        this.privacyShutdownStoreUnsubscribe = privacyShutdownStore.subscribe((away) => {
+            this.connection?.emitPlayerAway(away);
         });
 
         Promise.all([
@@ -767,7 +767,7 @@ export class GameScene extends DirtyScene {
                         characterLayers: message.characterLayers,
                         name: message.name,
                         position: message.position,
-                        status: message.status,
+                        away: message.away,
                         visitCardUrl: message.visitCardUrl,
                         companion: message.companion,
                         userUuid: message.userUuid,
@@ -907,15 +907,38 @@ export class GameScene extends DirtyScene {
                     });
                 });
 
-                this.gameMap.onEnterArea((areas) => {
-                    areas.forEach((area) => {
-                        iframeListener.sendEnterAreaEvent(area.name);
+                this.gameMap.onEnterZone((zones) => {
+                    for (const zone of zones) {
+                        const focusable = zone.properties?.find((property) => property.name === "focusable");
+                        if (focusable && focusable.value === true) {
+                            const zoomMargin = zone.properties?.find((property) => property.name === "zoom_margin");
+                            this.cameraManager.enterFocusMode(
+                                {
+                                    x: zone.x + zone.width * 0.5,
+                                    y: zone.y + zone.height * 0.5,
+                                    width: zone.width,
+                                    height: zone.height,
+                                },
+                                zoomMargin ? Math.max(0, Number(zoomMargin.value)) : undefined
+                            );
+                            break;
+                        }
+                    }
+                    zones.forEach((zone) => {
+                        iframeListener.sendEnterZoneEvent(zone.name);
                     });
                 });
 
-                this.gameMap.onLeaveArea((areas) => {
-                    areas.forEach((area) => {
-                        iframeListener.sendLeaveAreaEvent(area.name);
+                this.gameMap.onLeaveZone((zones) => {
+                    for (const zone of zones) {
+                        const focusable = zone.properties?.find((property) => property.name === "focusable");
+                        if (focusable && focusable.value === true) {
+                            this.cameraManager.leaveFocusMode(this.CurrentPlayer, 1000);
+                            break;
+                        }
+                    }
+                    zones.forEach((zone) => {
+                        iframeListener.sendLeaveZoneEvent(zone.name);
                     });
                 });
 
@@ -1103,13 +1126,6 @@ ${escapedMessage}
                 soundManager
                     .playSound(this.load, this.sound, url.toString(), playSoundEvent.config)
                     .catch((e) => console.error(e));
-            })
-        );
-
-        this.iframeSubscriptionList.push(
-            iframeListener.stopSoundStream.subscribe((stopSoundEvent) => {
-                const url = new URL(stopSoundEvent.url, this.MapUrlFile);
-                soundManager.stopSound(this.sound, url.toString());
             })
         );
 
@@ -1563,6 +1579,7 @@ ${escapedMessage}
         this.emoteUnsubscribe();
         this.emoteMenuUnsubscribe();
         this.followUsersColorStoreUnsubscribe();
+        this.privacyShutdownStoreUnsubscribe();
         this.biggestAvailableAreaStoreUnsubscribe();
         this.userIsJitsiDominantSpeakerStoreUnsubscriber();
         this.jitsiParticipantsCountStoreUnsubscriber();
@@ -1702,6 +1719,7 @@ ${escapedMessage}
     private createCollisionWithPlayer() {
         //add collision layer
         for (const phaserLayer of this.gameMap.phaserLayers) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             this.physics.add.collider(this.CurrentPlayer, phaserLayer, (object1: GameObject, object2: GameObject) => {
                 //this.CurrentPlayer.say("Collision with layer : "+ (object2 as Tile).layer.name)
             });
@@ -1752,9 +1770,11 @@ ${escapedMessage}
                     emoteMenuStore.openEmoteMenu();
                 }
             });
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             this.CurrentPlayer.on(Phaser.Input.Events.POINTER_OVER, (pointer: Phaser.Input.Pointer) => {
                 this.CurrentPlayer.pointerOverOutline(0x365dff);
             });
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             this.CurrentPlayer.on(Phaser.Input.Events.POINTER_OUT, (pointer: Phaser.Input.Pointer) => {
                 this.CurrentPlayer.pointerOutOutline();
             });
@@ -1856,7 +1876,8 @@ ${escapedMessage}
                     break;
                 }
                 default: {
-                    const _exhaustiveCheck: never = event;
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const tmp: never = event;
                 }
             }
         }
@@ -1935,8 +1956,8 @@ ${escapedMessage}
         if (addPlayerData.outlineColor !== undefined) {
             player.setApiOutlineColor(addPlayerData.outlineColor);
         }
-        if (addPlayerData.status !== undefined) {
-            player.setStatus(addPlayerData.status, true);
+        if (addPlayerData.away !== undefined) {
+            player.setAwayStatus(addPlayerData.away, true);
         }
         this.MapPlayers.add(player);
         this.MapPlayersByKey.set(player.userId, player);
@@ -2087,8 +2108,8 @@ ${escapedMessage}
         if (message.details?.showVoiceIndicator !== undefined) {
             character.showTalkIcon(message.details?.showVoiceIndicator);
         }
-        if (message.details?.status !== undefined) {
-            character.setStatus(message.details?.status);
+        if (message.details?.away !== undefined) {
+            character.setAwayStatus(message.details?.away);
         }
     }
 
@@ -2132,10 +2153,13 @@ ${escapedMessage}
     }
 
     public enableMediaBehaviors() {
+        const silent = this.gameMap.getCurrentProperties().get(GameMapProperties.SILENT);
+        this.connection?.setSilent(!!silent);
         mediaManager.showMyCamera();
     }
 
     public disableMediaBehaviors() {
+        this.connection?.setSilent(true);
         mediaManager.hideMyCamera();
     }
 

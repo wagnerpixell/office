@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { extendApi } from "@anatine/zod-openapi";
 
 export const isBanBannedAdminMessageInterface = z.object({
     type: z.enum(["ban", "banned"]),
@@ -9,7 +8,7 @@ export const isBanBannedAdminMessageInterface = z.object({
 
 export const isUserMessageAdminMessageInterface = z.object({
     event: z.enum(["user-message"]),
-    message: extendApi(isBanBannedAdminMessageInterface, { $ref: "#/definitions/BanBannedAdminMessageInterface" }),
+    message: isBanBannedAdminMessageInterface,
     world: z.string(),
     jwt: z.string(),
 });

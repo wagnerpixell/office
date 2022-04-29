@@ -166,8 +166,7 @@ return [
     ],
     [
         'title' => 'Troubleshooting',
-        'url' => '/map-building/troubleshooting.md',
-        'markdown' => 'maps.troubleshooting',
-        'editUrl' => 'https://github.com/thecodingmachine/workadventure/edit/develop/docs/maps/troubleshooting.md',
+        'url' => '/map-building/troubleshooting',
+        'view' => 'content.map.troubleshooting'
     ],
 ];

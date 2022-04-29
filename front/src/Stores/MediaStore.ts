@@ -11,7 +11,6 @@ import { peerStore } from "./PeerStore";
 import { privacyShutdownStore } from "./PrivacyShutdownStore";
 import { MediaStreamConstraintsError } from "./Errors/MediaStreamConstraintsError";
 import { SoundMeter } from "../Phaser/Components/SoundMeter";
-import { AvailabilityStatus } from "../Messages/ts-proto-generated/protos/messages";
 import deepEqual from "fast-deep-equal";
 
 /**
@@ -180,19 +179,10 @@ function createVideoConstraintStore() {
     };
 }
 
-export const inJitsiStore = writable(false);
-export const silentStore = writable(false);
-
-export const availabilityStatusStore = derived(
-    [inJitsiStore, silentStore, privacyShutdownStore],
-    ([$inJitsiStore, $silentStore, $privacyShutdownStore]) => {
-        if ($inJitsiStore) return AvailabilityStatus.JITSI;
-        if ($silentStore) return AvailabilityStatus.SILENT;
-        if ($privacyShutdownStore) return AvailabilityStatus.AWAY;
-        return AvailabilityStatus.ONLINE;
-    },
-    AvailabilityStatus.ONLINE
-);
+/**
+ * A store containing if user is silent, so if he is in silent zone. This permit to show et hide camera of user
+ */
+export const isSilentStore = writable(false);
 
 export const videoConstraintStore = createVideoConstraintStore();
 
@@ -251,7 +241,7 @@ export const mediaStreamConstraintsStore = derived(
         audioConstraintStore,
         privacyShutdownStore,
         cameraEnergySavingStore,
-        availabilityStatusStore,
+        isSilentStore,
     ],
     (
         [
@@ -263,7 +253,7 @@ export const mediaStreamConstraintsStore = derived(
             $audioConstraintStore,
             $privacyShutdownStore,
             $cameraEnergySavingStore,
-            $availabilityStatusStore,
+            $isSilentStore,
         ],
         set
     ) => {
@@ -320,7 +310,7 @@ export const mediaStreamConstraintsStore = derived(
             //currentAudioConstraint = false;
         }
 
-        if ($availabilityStatusStore === AvailabilityStatus.SILENT) {
+        if ($isSilentStore === true) {
             currentVideoConstraint = false;
             currentAudioConstraint = false;
         }

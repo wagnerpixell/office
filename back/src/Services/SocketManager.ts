@@ -5,6 +5,7 @@ import {
     PointMessage,
     RoomJoinedMessage,
     ServerToClientMessage,
+    SilentMessage,
     SubMessage,
     UserMovedMessage,
     UserMovesMessage,
@@ -157,6 +158,10 @@ export class SocketManager {
 
     handleSetPlayerDetails(room: GameRoom, user: User, playerDetailsMessage: SetPlayerDetailsMessage) {
         room.updatePlayerDetails(user, playerDetailsMessage);
+    }
+
+    handleSilentMessage(room: GameRoom, user: User, silentMessage: SilentMessage) {
+        room.setSilent(user, silentMessage.getSilent());
     }
 
     handleItemEvent(room: GameRoom, user: User, itemEventMessage: ItemEventMessage) {
@@ -323,7 +328,7 @@ export class SocketManager {
             userJoinedZoneMessage.setUserid(thing.id);
             userJoinedZoneMessage.setUseruuid(thing.uuid);
             userJoinedZoneMessage.setName(thing.name);
-            userJoinedZoneMessage.setStatus(thing.getStatus());
+            userJoinedZoneMessage.setAway(thing.isAway());
             userJoinedZoneMessage.setCharacterlayersList(ProtobufUtils.toCharacterLayerMessages(thing.characterLayers));
             userJoinedZoneMessage.setPosition(ProtobufUtils.toPositionMessage(thing.getPosition()));
             userJoinedZoneMessage.setFromzone(this.toProtoZone(fromZone));
@@ -651,7 +656,7 @@ export class SocketManager {
                 userJoinedMessage.setUserid(thing.id);
                 userJoinedMessage.setUseruuid(thing.uuid);
                 userJoinedMessage.setName(thing.name);
-                userJoinedMessage.setStatus(thing.getStatus());
+                userJoinedMessage.setAway(thing.isAway());
                 userJoinedMessage.setCharacterlayersList(ProtobufUtils.toCharacterLayerMessages(thing.characterLayers));
                 userJoinedMessage.setPosition(ProtobufUtils.toPositionMessage(thing.getPosition()));
                 if (thing.visitCardUrl) {
@@ -852,14 +857,14 @@ export class SocketManager {
             return;
         }
 
-        const versionNumber = await room.incrementVersion();
+        const versionNumber = room.incrementVersion();
         room.getUsers().forEach((recipient) => {
-            const refreshRoomMessage = new RefreshRoomMessage();
-            refreshRoomMessage.setRoomid(roomId);
-            refreshRoomMessage.setVersionnumber(versionNumber);
+            const worldFullMessage = new RefreshRoomMessage();
+            worldFullMessage.setRoomid(roomId);
+            worldFullMessage.setVersionnumber(versionNumber);
 
             const clientMessage = new ServerToClientMessage();
-            clientMessage.setRefreshroommessage(refreshRoomMessage);
+            clientMessage.setRefreshroommessage(worldFullMessage);
 
             recipient.socket.write(clientMessage);
         });

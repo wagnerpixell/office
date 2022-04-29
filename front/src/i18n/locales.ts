@@ -1,44 +1,52 @@
 import { detectLocale, navigatorDetector, initLocalStorageDetector } from "typesafe-i18n/detectors";
 import { FALLBACK_LOCALE } from "../Enum/EnvironmentVariable";
-import { setLocale } from "./i18n-svelte";
+import { initI18n, setLocale } from "./i18n-svelte";
 import type { Locales } from "./i18n-types";
-import { baseLocale, locales } from "./i18n-util";
-import { loadLocaleAsync } from "./i18n-util.async";
+import { baseLocale, getTranslationForLocale, locales } from "./i18n-util";
 
-const fallbackLocale = (FALLBACK_LOCALE || baseLocale) as Locales;
+const fallbackLocale = FALLBACK_LOCALE || baseLocale;
 const localStorageProperty = "language";
 
 export const localeDetector = async () => {
     const exist = localStorage.getItem(localStorageProperty);
-    let detectedLocale: Locales = fallbackLocale;
+    let detectedLocale: Locales = fallbackLocale as Locales;
 
     if (exist) {
         const localStorageDetector = initLocalStorageDetector(localStorageProperty);
-        detectedLocale = detectLocale(fallbackLocale, locales, localStorageDetector);
+        detectedLocale = detectLocale(fallbackLocale, locales, localStorageDetector) as Locales;
     } else {
-        detectedLocale = detectLocale(fallbackLocale, locales, navigatorDetector);
+        detectedLocale = detectLocale(fallbackLocale, locales, navigatorDetector) as Locales;
     }
 
-    await setCurrentLocale(detectedLocale);
+    await initI18n(detectedLocale);
 };
 
-export const setCurrentLocale = async (locale: Locales) => {
+export const setCurrentLocale = (locale: Locales) => {
     localStorage.setItem(localStorageProperty, locale);
-    await loadLocaleAsync(locale);
-    setLocale(locale);
+    setLocale(locale).catch(() => {
+        console.log("Cannot reload the locale!");
+    });
 };
 
-export const displayableLocales: { id: Locales; language: string; region: string }[] = locales.map((locale) => {
-    const [language, region] = locale.split("-");
+export type DisplayableLocale = { id: Locales; language: string; country: string };
 
-    // backwards compatibility
-    if (!Intl.DisplayNames) {
-        return { id: locale, language, region };
-    }
+function getDisplayableLocales() {
+    const localesObject: DisplayableLocale[] = [];
+    locales.forEach((locale) => {
+        getTranslationForLocale(locale)
+            .then((translations) => {
+                localesObject.push({
+                    id: locale,
+                    language: translations.language,
+                    country: translations.country,
+                });
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    });
 
-    return {
-        id: locale,
-        language: new Intl.DisplayNames(locale, { type: "language" }).of(language),
-        region: new Intl.DisplayNames(locale, { type: "region" }).of(region),
-    };
-});
+    return localesObject;
+}
+
+export const displayableLocales = getDisplayableLocales();

@@ -24,6 +24,7 @@ import {
     ServerToAdminClientMessage,
     ServerToClientMessage,
     SetPlayerDetailsMessage,
+    SilentMessage,
     SubMessage,
     UserJoinedRoomMessage,
     UserLeftMessage,
@@ -39,10 +40,10 @@ import {
     PlayerDetailsUpdatedMessage,
     LockGroupPromptMessage,
     InvalidTextureMessage,
-    ErrorScreenMessage,
 } from "../Messages/generated/messages_pb";
 import { ProtobufUtils } from "../Model/Websocket/ProtobufUtils";
-import { JITSI_ISS, JITSI_URL, SECRET_JITSI_KEY } from "../Enum/EnvironmentVariable";
+import { ADMIN_API_URL, JITSI_ISS, JITSI_URL, SECRET_JITSI_KEY } from "../Enum/EnvironmentVariable";
+import { adminApi } from "./AdminApi";
 import { emitInBatch } from "./IoSocketHelpers";
 import Jwt from "jsonwebtoken";
 import { clientEventsEmitter } from "./ClientEventsEmitter";
@@ -52,9 +53,7 @@ import { GroupDescriptor, UserDescriptor, ZoneEventListener } from "../Model/Zon
 import Debug from "debug";
 import { ExAdminSocketInterface } from "../Model/Websocket/ExAdminSocketInterface";
 import { compressors } from "hyper-express";
-import { adminService } from "./AdminService";
-import { ErrorApiData } from "../Messages/JsonMessages/ErrorApiData";
-import { BoolValue, Int32Value, StringValue } from "google-protobuf/google/protobuf/wrappers_pb";
+import { isMapDetailsData } from "../Messages/JsonMessages/MapDetailsData";
 
 const debug = Debug("socket");
 
@@ -361,6 +360,13 @@ export class SocketManager implements ZoneEventListener {
         client.backConnection.write(pusherToBackMessage);
     }
 
+    handleSilentMessage(client: ExSocketInterface, silentMessage: SilentMessage) {
+        const pusherToBackMessage = new PusherToBackMessage();
+        pusherToBackMessage.setSilentmessage(silentMessage);
+
+        client.backConnection.write(pusherToBackMessage);
+    }
+
     handleItemEvent(client: ExSocketInterface, itemEventMessage: ItemEventMessage) {
         const pusherToBackMessage = new PusherToBackMessage();
         pusherToBackMessage.setItemeventmessage(itemEventMessage);
@@ -377,8 +383,7 @@ export class SocketManager implements ZoneEventListener {
 
     async handleReportMessage(client: ExSocketInterface, reportPlayerMessage: ReportPlayerMessage) {
         try {
-            await adminService.reportPlayer(
-                "en",
+            await adminApi.reportPlayer(
                 reportPlayerMessage.getReporteduseruuid(),
                 reportPlayerMessage.getReportcomment(),
                 client.userUuid,
@@ -454,10 +459,26 @@ export class SocketManager implements ZoneEventListener {
         let room = this.rooms.get(roomUrl);
         if (room === undefined) {
             room = new PusherRoom(roomUrl, this);
+            if (ADMIN_API_URL) {
+                await this.updateRoomWithAdminData(room);
+            }
             await room.init();
             this.rooms.set(roomUrl, room);
         }
         return room;
+    }
+
+    public async updateRoomWithAdminData(room: PusherRoom): Promise<void> {
+        const data = await adminApi.fetchMapDetails(room.roomUrl);
+        const mapDetailsData = isMapDetailsData.safeParse(data);
+
+        if (mapDetailsData.success) {
+            room.tags = mapDetailsData.data.tags;
+            room.policyType = Number(mapDetailsData.data.policy_type);
+        } else {
+            // TODO: if the updated room data is actually a redirect, we need to take everybody on the map
+            // and redirect everybody to the new location (so we need to close the connection for everybody)
+        }
     }
 
     public getWorlds(): Map<string, PusherRoom> {
@@ -648,39 +669,12 @@ export class SocketManager implements ZoneEventListener {
         client.send(serverToClientMessage.serializeBinary().buffer, true);
     }
 
-    public emitErrorScreenMessage(client: compressors.WebSocket, errorApi: ErrorApiData) {
-        const errorMessage = new ErrorScreenMessage();
-        errorMessage.setType(errorApi.type);
-        if (errorApi.type == "retry" || errorApi.type == "error" || errorApi.type == "unauthorized") {
-            errorMessage.setCode(new StringValue().setValue(errorApi.code));
-            errorMessage.setTitle(new StringValue().setValue(errorApi.title));
-            errorMessage.setSubtitle(new StringValue().setValue(errorApi.subtitle));
-            errorMessage.setDetails(new StringValue().setValue(errorApi.details));
-            errorMessage.setImage(new StringValue().setValue(errorApi.image));
-        }
-        if (errorApi.type == "retry") {
-            if (errorApi.buttonTitle) errorMessage.setButtontitle(new StringValue().setValue(errorApi.buttonTitle));
-            if (errorApi.canRetryManual !== undefined)
-                errorMessage.setCanretrymanual(new BoolValue().setValue(errorApi.canRetryManual));
-            if (errorApi.timeToRetry)
-                errorMessage.setTimetoretry(new Int32Value().setValue(Number(errorApi.timeToRetry)));
-        }
-        if (errorApi.type == "redirect" && errorApi.urlToRedirect)
-            errorMessage.setUrltoredirect(new StringValue().setValue(errorApi.urlToRedirect));
-
-        const serverToClientMessage = new ServerToClientMessage();
-        serverToClientMessage.setErrorscreenmessage(errorMessage);
-
-        //if (!client.disconnecting) {
-        client.send(serverToClientMessage.serializeBinary().buffer, true);
-        //}
-    }
-
     private refreshRoomData(roomId: string, versionNumber: number): void {
         const room = this.rooms.get(roomId);
         //this function is run for every users connected to the room, so we need to make sure the room wasn't already refreshed.
         if (!room || !room.needsUpdate(versionNumber)) return;
-        //TODO check right of user in admin
+
+        this.updateRoomWithAdminData(room);
     }
 
     handleEmotePromptMessage(client: ExSocketInterface, emoteEventmessage: EmotePromptMessage) {
@@ -702,7 +696,7 @@ export class SocketManager implements ZoneEventListener {
         let tabUrlRooms: string[];
 
         if (playGlobalMessageEvent.getBroadcasttoworld()) {
-            tabUrlRooms = await adminService.getUrlRoomsFromSameWorld("en", clientRoomUrl);
+            tabUrlRooms = await adminApi.getUrlRoomsFromSameWorld(clientRoomUrl);
         } else {
             tabUrlRooms = [clientRoomUrl];
         }

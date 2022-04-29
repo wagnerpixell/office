@@ -28,4 +28,5 @@ publish:
     provider: github
     owner: thecodingmachine
     repo: workadventure
-    releaseType: release
+    vPrefixedTagName: false
+    releaseType: draft

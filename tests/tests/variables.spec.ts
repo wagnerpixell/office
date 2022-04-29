@@ -83,9 +83,7 @@ test.describe('Variables', () => {
     );
     // Redis will reconnect automatically and will store the variable on reconnect!
     // So we should see the new value.
-    await expect(textField).toHaveValue('value set while Redis stopped', {
-      timeout: 60000,
-    });
+    await expect(textField).toHaveValue('value set while Redis stopped');
 
     // Now, let's try to kill / reboot the back
     await rebootBack();

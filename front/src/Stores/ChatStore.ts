@@ -87,10 +87,7 @@ function createChatMessagesStore() {
                 return list;
             });
         },
-        /**
-         * @param origin The iframe that originated this message (if triggered from the Scripting API), or undefined otherwise.
-         */
-        addExternalMessage(authorId: number, text: string, origin?: Window) {
+        addExternalMessage(authorId: number, text: string) {
             update((list) => {
                 const lastMessage = list[list.length - 1];
                 if (
@@ -109,7 +106,7 @@ function createChatMessagesStore() {
                     });
                 }
 
-                iframeListener.sendUserInputChat(text, origin);
+                iframeListener.sendUserInputChat(text);
                 return list;
             });
             chatVisibilityStore.set(true);

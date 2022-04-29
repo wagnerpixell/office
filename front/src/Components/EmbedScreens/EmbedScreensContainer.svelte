@@ -19,5 +19,6 @@
         padding-top: 2%;
         height: 100%;
         position: relative;
+        z-index: 200;
     }
 </style>

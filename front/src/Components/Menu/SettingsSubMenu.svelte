@@ -9,8 +9,6 @@
     import { isMediaBreakpointUp } from "../../Utils/BreakpointsUtils";
     import { audioManagerVolumeStore } from "../../Stores/AudioManagerStore";
 
-    import infoImg from "../images/info.svg";
-
     let fullscreen: boolean = localUserStore.getFullscreen();
     let notification: boolean = localUserStore.getNotification() === "granted";
     let forceCowebsiteTrigger: boolean = localUserStore.getForceCowebsiteTrigger();
@@ -28,12 +26,12 @@
     let previewCameraPrivacySettings = valueCameraPrivacySettings;
     let previewMicrophonePrivacySettings = valueMicrophonePrivacySettings;
 
-    async function saveSetting() {
+    function saveSetting() {
         let change = false;
 
         if (valueLocale !== previewValueLocale) {
             previewValueLocale = valueLocale;
-            await setCurrentLocale(valueLocale as Locales);
+            setCurrentLocale(valueLocale as Locales);
         }
 
         if (valueVideo !== previewValueVideo) {
@@ -174,22 +172,15 @@
         <div class="nes-select is-dark">
             <select class="languages-switcher" bind:value={valueLocale}>
                 {#each displayableLocales as locale (locale.id)}
-                    <option value={locale.id}>{`${locale.language} (${locale.region})`}</option>
+                    <option value={locale.id}>{`${locale.language} (${locale.country})`}</option>
                 {/each}
             </select>
         </div>
     </section>
 
     <section>
-        <div class="tooltip">
-            <h3>
-                <span class="dotted-bottom">{$LL.menu.settings.privacySettings.title()}</span>
-                <img src={infoImg} alt="info icon" width="23px" height="23px" />
-            </h3>
-            <div class="nes-balloon away-tooltip-container from-left flex">
-                <p class="away-tooltip-text">{$LL.menu.settings.privacySettings.explanation()}</p>
-            </div>
-        </div>
+        <h3>{$LL.menu.settings.privacySettings.title()}</h3>
+        <p>{$LL.menu.settings.privacySettings.explanation()}</p>
         <label>
             <input type="checkbox" class="nes-checkbox is-dark" bind:checked={valueCameraPrivacySettings} />
             <span>{$LL.menu.settings.privacySettings.cameraToggle()}</span>
@@ -294,35 +285,6 @@
 
         .languages-switcher option {
             text-transform: capitalize;
-        }
-
-        //Tooltip
-        .tooltip {
-            position: relative;
-        }
-
-        .away-tooltip-container {
-            background-color: #fff;
-            position: absolute;
-            bottom: 45%;
-            left: 55%;
-
-            visibility: hidden;
-            transition: opacity 0.3s;
-        }
-
-        .away-tooltip-text {
-            color: #000;
-        }
-    }
-
-    .dotted-bottom {
-        border-bottom: 1px dotted;
-    }
-
-    .tooltip:hover {
-        .away-tooltip-container {
-            visibility: visible;
         }
     }
 

@@ -10,7 +10,7 @@ import { setLogLevel } from "./log";
 import "./serve"; // prepare custom url scheme
 import { loadShortcuts } from "./shortcuts";
 
-async function init() {
+function init() {
     const appLock = app.requestSingleInstanceLock();
 
     if (!appLock) {
@@ -21,7 +21,7 @@ async function init() {
 
     app.on("second-instance", () => {
         // re-create window if closed
-        void createWindow();
+        createWindow();
 
         const mainWindow = getWindow();
 
@@ -36,15 +36,15 @@ async function init() {
     });
 
     // This method will be called when Electron has finished loading
-    await app.whenReady().then(async () => {
+    app.whenReady().then(async () => {
         await settings.init();
 
         setLogLevel(settings.get("log_level") || "info");
 
-        await autoUpdater.init();
+        autoUpdater.init();
 
         // enable auto launch
-        await updateAutoLaunch();
+        updateAutoLaunch();
 
         // load ipc handler
         ipc();
@@ -72,7 +72,7 @@ async function init() {
         // On macOS it's common to re-create a window in the app when the
         // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) {
-            void createWindow();
+            createWindow();
         }
     });
 
